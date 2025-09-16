@@ -27,8 +27,9 @@ export class DetailsPage {
   }
 
   async verifyPageHeader(header: string) {
-    this.page.waitForLoadState("networkidle");
-    await expect(this.page.locator('h1')).toContainText(header,{timeout: 30000});
+    await expect(this.page.locator("h1")).toContainText(header, {
+      timeout: 30000,
+    });
   }
 
   async verifyActionIsAvailable(actionName: string) {

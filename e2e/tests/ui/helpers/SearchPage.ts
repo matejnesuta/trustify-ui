@@ -68,26 +68,36 @@ export class SearchPage {
 
   async open() {
     await this.page.goto("/search");
-  } 
+  }
 
   async typeInSearchBox(searchText: string) {
     await this.page.waitForLoadState("networkidle");
-    const searchBox = this.page.locator("#autocomplete-search").locator('[aria-label="Search input"]');
+    const searchBox = this.page
+      .locator("#autocomplete-search")
+      .locator('[aria-label="Search input"]');
     await expect(searchBox).toBeVisible();
     await searchBox.click();
     await this.page.keyboard.type(searchText);
   }
 
   async autoFillIsVisible() {
-    await expect(this.page.locator("#autocomplete-search").locator(".pf-v6-c-menu")).toBeVisible();
+    await expect(
+      this.page.locator("#autocomplete-search").locator(".pf-v6-c-menu"),
+    ).toBeVisible();
   }
 
   async autoFillIsNotVisible() {
-    await expect(this.page.locator("#autocomplete-search").locator(".pf-v6-c-menu")).toBeHidden({timeout: 30000});
+    await expect(
+      this.page.locator("#autocomplete-search").locator(".pf-v6-c-menu"),
+    ).toBeHidden({ timeout: 30000 });
   }
 
   async autoFillHasRelevantResults(searchText: string) {
-    const results = this.page.locator("#autocomplete-search").locator(".pf-v6-c-menu").locator("li").filter({ hasText: new RegExp(searchText, 'i') });
+    const results = this.page
+      .locator("#autocomplete-search")
+      .locator(".pf-v6-c-menu")
+      .locator("li")
+      .filter({ hasText: new RegExp(searchText, "i") });
     for (const result of await results.all()) {
       await expect(result).toBeVisible();
     }
@@ -95,20 +105,21 @@ export class SearchPage {
 
   async totalAutoFillResults(): Promise<number> {
     // wait for the dropdown items to be attached
-    await this.page.waitForSelector('#autocomplete-search .pf-v6-c-menu li', {
-      state: 'attached',
+    await this.page.waitForSelector("#autocomplete-search .pf-v6-c-menu li", {
+      state: "attached",
       timeout: 10000, // increase if needed
     });
 
-    const results = this.page
-      .locator('#autocomplete-search .pf-v6-c-menu li');
+    const results = this.page.locator("#autocomplete-search .pf-v6-c-menu li");
 
     return await results.count();
   }
 
   async autoFillCategoryCountsByHref(): Promise<Record<string, number>> {
-    const results = this.page.locator('#autocomplete-search .pf-v6-c-menu a[href]');
-    await results.first().waitFor({ state: 'visible' });
+    const results = this.page.locator(
+      "#autocomplete-search .pf-v6-c-menu a[href]",
+    );
+    await results.first().waitFor({ state: "visible" });
 
     const categories: Record<string, number> = {
       Vulnerability: 0,
@@ -119,13 +130,13 @@ export class SearchPage {
 
     const items = await results.elementHandles();
     for (const item of items) {
-      const href = await item.getAttribute('href');
+      const href = await item.getAttribute("href");
       if (!href) continue;
 
-      if (href.startsWith('/vulnerabilities')) categories.Vulnerability++;
-      else if (href.startsWith('/sboms')) categories.SBOM++;
-      else if (href.startsWith('/advisories')) categories.Advisory++;
-      else if (href.startsWith('/packages')) categories.Package++;
+      if (href.startsWith("/vulnerabilities")) categories.Vulnerability++;
+      else if (href.startsWith("/sboms")) categories.SBOM++;
+      else if (href.startsWith("/advisories")) categories.Advisory++;
+      else if (href.startsWith("/packages")) categories.Package++;
     }
 
     return categories;
