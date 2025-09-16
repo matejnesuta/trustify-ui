@@ -47,27 +47,32 @@ export class ToolbarTable {
   }
 
   /**
-   * Check if specific table column contains the expected value 
-  * 
-  * @param columnName 
-  * @param expectedValue 
-  */
+   * Check if specific table column contains the expected value
+   *
+   * @param columnName
+   * @param expectedValue
+   */
   // biome-ignore lint/suspicious/noExplicitAny: allowed
   async verifyColumnContainsText(columnName: any, expectedValue: any) {
     const table = this.getTable();
-    const matchingCells = table.locator(`td[data-label="${columnName}"]`).getByText(expectedValue);
+    const matchingCells = table
+      .locator(`td[data-label="${columnName}"]`)
+      .getByText(expectedValue);
 
-    await expect(matchingCells.first()).toBeVisible({timeout: 60000});
+    await expect(matchingCells.first()).toBeVisible({ timeout: 60000 });
   }
 
   /**
    * Check if specific table column does not contain the expected value
-  * 
-  * @param columnName 
-  * @param expectedValue 
-  */
+   *
+   * @param columnName
+   * @param expectedValue
+   */
 
-  async verifyColumnDoesNotContainText(columnName: any, expectedValue: any) {
+  async verifyColumnDoesNotContainText(
+    columnName: string,
+    expectedValue: string,
+  ) {
     const table = this.getTable();
     const field = table.locator(`td[data-label="${columnName}"]`);
 
@@ -146,7 +151,9 @@ export class ToolbarTable {
    */
   async selectPerPage(parentElem: string, perPage: string) {
     const pagination = this._page.locator(parentElem);
-    await pagination.locator('button[aria-haspopup="listbox"]').waitFor({ state: "visible" });
+    await pagination
+      .locator('button[aria-haspopup="listbox"]')
+      .waitFor({ state: "visible" });
     await pagination.locator('button[aria-haspopup="listbox"]').click();
 
     await this._page.getByRole("menuitem", { name: perPage }).click();
@@ -296,7 +303,10 @@ export class ToolbarTable {
    * @param parentElem ParentElement of pagination
    * @returns two dimensional string which contains the contents of table
    */
-   async getTableRows(parentElem: string, maxPages: number = Infinity): Promise<string[][]> {
+  async getTableRows(
+    parentElem: string,
+    maxPages: number = Infinity,
+  ): Promise<string[][]> {
     const nextPageElem = await this._page
       .locator(parentElem)
       .getByLabel("Go to next page");
@@ -348,21 +358,21 @@ export class ToolbarTable {
     }
     // Find the first row that has a non-empty value in the target column
     const firstNonEmptyRowIndex = dataRow.findIndex(
-      (r) => r && r[index] !== undefined && r[index] !== ""
+      (r) => r && r[index] !== undefined && r[index] !== "",
     );
     if (firstNonEmptyRowIndex !== -1) {
       row = firstNonEmptyRowIndex;
     }
     // Safely detect the type from the discovered row (if any)
     const sampleValue = dataRow[row] ? dataRow[row][index] : "";
-    let isDate = this.isValidDate(sampleValue);
-    let isCVSS = this.isCVSS(sampleValue);
-    let isCVE = this.isCVE(sampleValue);
+    const isDate = this.isValidDate(sampleValue);
+    const isCVSS = this.isCVSS(sampleValue);
+    const isCVE = this.isCVE(sampleValue);
     const sortedRows = [...dataRow].sort((rowA, rowB) => {
-      let compare: any;
+      let compare: number;
       // Guard against missing cells; default to empty string for safe comparisons
-      let valueA = rowA[index] ?? "";
-      let valueB = rowB[index] ?? "";
+      const valueA = rowA[index] ?? "";
+      const valueB = rowB[index] ?? "";
 
       // // Blank-handling logic
       // if (valueA === "" && valueB !== "") {
@@ -458,14 +468,15 @@ export class ToolbarTable {
    */
   async sortColumn(columnHeader: string, sortOrder: string): Promise<boolean> {
     const headerElem = await this._page.getByRole("columnheader", {
-      name: `${columnHeader}`,exact: false,
+      name: `${columnHeader}`,
+      exact: false,
     });
     for (let i = 0; i < 3; i++) {
       const sort = await headerElem.getAttribute(`aria-sort`);
       if (sort === sortOrder) {
         return true;
       } else {
-        await headerElem.getByRole("button", {name: columnHeader}).click();
+        await headerElem.getByRole("button", { name: columnHeader }).click();
       }
     }
     return false;
@@ -527,13 +538,15 @@ export class ToolbarTable {
    */
   async verifyDownloadLink(type: string) {
     const table = this.getTable();
-    const link = table.locator('[aria-label="Kebab toggle"]').first(); 
-    await expect(link).toBeVisible({timeout: 60000});
+    const link = table.locator('[aria-label="Kebab toggle"]').first();
+    await expect(link).toBeVisible({ timeout: 60000 });
     await link.click();
     if (type === "SBOMs") {
       await expect(this._page.locator("text=Download SBOM")).toBeVisible();
-      await expect(this._page.locator("text=Download License Report")).toBeVisible();
-    }else {
+      await expect(
+        this._page.locator("text=Download License Report"),
+      ).toBeVisible();
+    } else {
       await expect(this._page.locator("text=Download")).toBeVisible();
     }
   }
@@ -574,11 +587,14 @@ export class ToolbarTable {
     this._page.getByText("Clear all filters").click();
   }
 
-  async openDetailsPage(name: string,columnName: string = "Name") {
+  async openDetailsPage(name: string, columnName: string = "Name") {
     const table = this.getTable();
-    await table.locator(`td[data-label="${columnName}"]`).getByText(name).first().click();
+    await table
+      .locator(`td[data-label="${columnName}"]`)
+      .getByText(name)
+      .first()
+      .click();
   }
-
 
   async goToNextPage() {
     const nextPage = this._page.locator('button[aria-label="Go to next page"]');
@@ -586,7 +602,9 @@ export class ToolbarTable {
   }
 
   async goToPreviousPage() {
-    const previousPage = this._page.locator('button[aria-label="Go to previous page"]');
+    const previousPage = this._page.locator(
+      'button[aria-label="Go to previous page"]',
+    );
     await previousPage.click();
   }
 
@@ -596,7 +614,7 @@ export class ToolbarTable {
     const link = field.locator(`a[href*="${keyword.toLowerCase()}"]`);
     await expect(link).toBeVisible();
   }
-  
+
   private getTable() {
     return this._page.locator(`table[aria-label="${this._tableName}"]`);
   }
