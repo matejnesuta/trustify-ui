@@ -47,7 +47,7 @@ export default defineConfig({
     trace: "on-first-retry",
 
     // Capture screenshot after each test failure.
-    screenshot: 'only-on-failure',
+    screenshot: "only-on-failure",
     ignoreHTTPSErrors: true,
   },
 
