@@ -144,12 +144,12 @@ Then(
       await table.clearFilter();
       await table.verifyColumnContainsText("Name", "quarkus-bom");
     } else if (arg === "Vulnerabilities") {
-      await page.getByLabel("Critical").check();
+      await page.getByLabel("Critical").click();
       await table.verifyColumnDoesNotContainText("ID", "CVE-2022-45787");
       await table.clearFilter();
       await table.verifyColumnContainsText("ID", "CVE-2022-45787");
     } else if (arg === "Packages") {
-      await page.getByLabel("OCI").check();
+      await page.getByLabel("OCI").click();
       await table.verifyColumnDoesNotContainText("Name", "quarkus");
       await table.clearFilter();
       await table.verifyColumnContainsText("Name", "quarkus");
