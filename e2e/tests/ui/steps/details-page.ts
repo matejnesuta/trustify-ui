@@ -1,7 +1,7 @@
 import { createBdd } from "playwright-bdd";
 import { DetailsPage } from "../helpers/DetailsPage";
 import { expect } from "@playwright/test";
-import { Tabs } from "../helpers/Tabs"; 
+import { Tabs } from "../helpers/Tabs";
 
 export const { Given, When, Then } = createBdd();
 

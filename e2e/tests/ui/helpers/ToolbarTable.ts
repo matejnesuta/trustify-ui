@@ -474,9 +474,21 @@ export class ToolbarTable {
     for (let i = 0; i < 3; i++) {
       const sort = await headerElem.getAttribute(`aria-sort`);
       if (sort === sortOrder) {
+      // Wait for PatternFly to finish DOM update
+        await this._page.waitForTimeout(50); // small buffer
+        await this._page.waitForFunction(
+          ({ header, order }) => {
+            const th = Array.from(document.querySelectorAll("th")).find(th =>
+              th.textContent?.includes(header)
+            );
+            return th?.getAttribute("aria-sort") === order;
+          },
+        { header: columnHeader, order: sortOrder }
+        );
         return true;
       } else {
         await headerElem.getByRole("button", { name: columnHeader }).click();
+        await this._page.waitForTimeout(100);
       }
     }
     return false;
