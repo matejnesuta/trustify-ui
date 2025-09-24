@@ -390,10 +390,10 @@ export class ToolbarTable {
         const cvssA = this.getCVSS(valueA);
         const cvssB = this.getCVSS(valueB);
         compare = cvssA - cvssB;
-      } else if (isCVE) {
-        const [cveYA, cveIA] = this.getCVE(valueA);
-        const [cveYB, cveIB] = this.getCVE(valueB);
-        compare = cveYA !== cveYB ? cveYA - cveYB : cveIA - cveIB;
+      // } else if (isCVE) {
+      //   const [cveYA, cveIA] = this.getCVE(valueA);
+      //   const [cveYB, cveIB] = this.getCVE(valueB);
+      //   compare = cveYA !== cveYB ? cveYA - cveYB : cveIA - cveIB;
       } else {
         compare = valueA.localeCompare(valueB);
       }
@@ -445,6 +445,9 @@ export class ToolbarTable {
     const cvssRegex = /^.+\((\d*\.*\d+?)\)$/;
     // biome-ignore lint/style/noNonNullAssertion: allowed
     const cvssScore = cvssString.match(cvssRegex)!;
+    if (cvssScore === null && cvssString.includes("Unknown")) {
+      return 20;
+    }
     // biome-ignore lint/style/noNonNullAssertion: allowed
     return parseFloat(cvssScore[1]!);
   }
