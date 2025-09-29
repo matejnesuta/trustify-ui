@@ -12,7 +12,7 @@ Scenario: User visits search page without filling anything
 	And a total number of 29 "Vulnerabilities" should be visible in the tab
 	And a total number of 57 "Advisories" should be visible in the tab
 
-Scenario Outline: User toggles the "<types>"list and manipulates the list
+Scenario Outline: User toggles the "<types>" list and manipulates the list
  	When User selects the Tab "<types>" 
 	Then the "<types>" list should have specific filter set
 	And the "<types>" list should be sortable
