@@ -2,21 +2,28 @@ import { test } from "../fixtures";
 import {
   testBasicSort,
   validateDateSorting,
-  validateSortDirectionDiffers,
+  validateStringSorting,
 } from "../helpers/sorting-helpers";
 
 test.describe("Advisory sorting validation", () => {
   test("Sort advisories by ID ascending", async ({ axios }) => {
-    await testBasicSort(axios, "/api/v2/advisory", "id", "asc");
+    const items = await testBasicSort(
+      axios,
+      "/api/v2/advisory",
+      "identifier",
+      "asc",
+    );
+    validateStringSorting(items, "identifier", "ascending");
   });
 
   test("Sort advisories by ID descending", async ({ axios }) => {
-    await validateSortDirectionDiffers(
+    const items = await testBasicSort(
       axios,
       "/api/v2/advisory",
-      "id",
-      (item) => item.identifier,
+      "identifier",
+      "desc",
     );
+    validateStringSorting(items, "identifier", "descending");
   });
 
   test("Sort advisories by modified date ascending", async ({ axios }) => {
