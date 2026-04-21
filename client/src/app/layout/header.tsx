@@ -34,8 +34,11 @@ import HelpIcon from "@patternfly/react-icons/dist/esm/icons/help-icon";
 import BarsIcon from "@patternfly/react-icons/dist/js/icons/bars-icon";
 import ExternalLinkAltIcon from "@patternfly/react-icons/dist/js/icons/external-link-alt-icon";
 
+import { ThemeSelector } from "tsd-ui";
+
 import { isAuthRequired } from "@app/Constants";
 import useBranding from "@app/hooks/useBranding";
+import { oidcSignoutArgs } from "@app/oidc";
 
 import imgAvatar from "../images/avatar.svg";
 import { AboutApp } from "./about";
@@ -68,7 +71,7 @@ export const HeaderApp: React.FC = () => {
 
   const logout = () => {
     auth
-      ?.signoutRedirect()
+      ?.signoutRedirect(oidcSignoutArgs)
       .then(() => {})
       .catch((err) => {
         console.error("Logout failed:", err);
@@ -181,6 +184,9 @@ export const HeaderApp: React.FC = () => {
                     </DropdownList>
                   </Dropdown>
                 </ToolbarItem>
+                <ToolbarItem>
+                  <ThemeSelector />
+                </ToolbarItem>
               </ToolbarGroup>
 
               {/* toolbar items to show at mobile sizes */}
@@ -190,6 +196,9 @@ export const HeaderApp: React.FC = () => {
                 gap={{ default: "gapNone", md: "gapMd" }}
                 visibility={{ lg: "hidden" }}
               >
+                <ToolbarItem>
+                  <ThemeSelector />
+                </ToolbarItem>
                 <ToolbarItem>
                   <Dropdown
                     isOpen={isKebabDropdownOpen}
