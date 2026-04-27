@@ -9,60 +9,57 @@ import {
   ModalHeader,
 } from "@patternfly/react-core";
 
-import type { Group } from "@app/client";
+import type { SbomHead } from "@app/client";
 
-import { GroupForm } from "./group-form";
-import { useGroupForm } from "./useGroupForm";
-import { useGroupFormData } from "./useGroupFormData";
+import { AddToGroupForm } from "./add-to-group-form";
+import { useAddToGroupForm } from "./useAddToGroupForm";
+import { useAddToGroupFormData } from "./useAddToGroupFormData";
 
-export interface GroupFormModalProps {
-  group: Group | null;
+interface IAddToGroupModalProps {
+  sboms: SbomHead[];
   onClose: () => void;
   isOpen?: boolean;
 }
 
-export const GroupFormModal: React.FC<GroupFormModalProps> = ({
-  group,
+export const AddToGroupModal: React.FC<IAddToGroupModalProps> = ({
+  sboms,
   onClose,
-  isOpen = true,
+  isOpen,
 }) => {
   if (!isOpen) {
     return null;
   }
 
   return (
-    <GroupFormModalInner
-      key={!isOpen ? "closed" : (group?.id ?? "new")}
-      group={group}
-      onClose={onClose}
-      isOpen={isOpen}
-    />
+    <AddToGroupModalInner sboms={sboms} onClose={onClose} isOpen={isOpen} />
   );
 };
 
-const GroupFormModalInner: React.FC<GroupFormModalProps> = ({
-  group,
+const AddToGroupModalInner: React.FC<IAddToGroupModalProps> = ({
+  sboms,
   onClose,
   isOpen,
 }) => {
-  const formData = useGroupFormData({
+  const formData = useAddToGroupFormData({
     onActionSuccess: onClose,
   });
-  const { form, onSubmit, isSubmitDisabled, isCancelDisabled } = useGroupForm({
-    group,
-    formData,
-  });
+  const { form, onSubmit, isSubmitDisabled, isCancelDisabled } =
+    useAddToGroupForm({
+      sboms,
+      formData,
+    });
 
   return (
     <Modal
       variant="small"
       isOpen={isOpen}
       onClose={onClose}
-      aria-label={group ? "Edit group" : "Create group"}
+      aria-label={"Add SBOMs to Group"}
+      style={{ overflow: "visible" }}
     >
-      <ModalHeader title={group ? "Edit group" : "Create group"} />
+      <ModalHeader title={"Add SBOM(s) to group"} />
       <ModalBody>
-        <GroupForm group={group} form={form} data={formData} />
+        <AddToGroupForm form={form} data={formData} />
       </ModalBody>
       <ModalFooter>
         <Button
@@ -72,7 +69,7 @@ const GroupFormModalInner: React.FC<GroupFormModalProps> = ({
           isDisabled={isSubmitDisabled}
           onClick={onSubmit}
         >
-          {group ? "Save" : "Create"}
+          Add
         </Button>
         <Button
           key="cancel"
