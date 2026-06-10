@@ -54,19 +54,15 @@ export const useVulnerabilitiesOfSbomByPurls = (purls: string[]) => {
     const vulnerabilities = Object.entries(analysisResponse)
       .flatMap(([purl, analysisDetails]) => {
         return analysisDetails.details.flatMap((vulnerability) => {
-          return Object.entries(vulnerability.status).flatMap(
-            ([status, advisories]) => {
-              return advisories.map((advisory) => {
-                return {
-                  purl,
-                  vulnerability,
-                  status: status as VulnerabilityStatus,
-                  advisory,
-                  scores: advisory.scores,
-                };
-              });
-            },
-          );
+          return vulnerability.purl_statuses.flatMap((status) => {
+            return {
+              purl,
+              vulnerability: status.vulnerability,
+              status: status.status as VulnerabilityStatus,
+              advisory: status.advisory,
+              scores: status.scores,
+            };
+          });
         });
       })
       //group
@@ -113,8 +109,8 @@ export const useVulnerabilitiesOfSbomByPurls = (purls: string[]) => {
           purls.add(current.purl);
 
           // new opinionated advisory
-          let opinionatedAdvisory: AdvisoryHead | null = null;
-          let opinionatedScore: Score | null = null;
+          let opinionatedAdvisory: AdvisoryHead | null;
+          let opinionatedScore: Score | null;
           if (existingElement.opinionatedAdvisory.score?.type !== score?.type) {
             const preferedAdvisoryScore = [
               {

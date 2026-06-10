@@ -46,7 +46,7 @@ export class ToolbarTable {
     ).toHaveAttribute("aria-sort", asc ? "ascending" : "descending");
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: allowed
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- allowed
   async verifyColumnContainsText(columnName: any, expectedValue: any) {
     const table = this.getTable();
     await expect(table.locator(`td[data-label="${columnName}"]`)).toContainText(
@@ -101,7 +101,6 @@ export class ToolbarTable {
       `xpath=//span[contains(@class,'form-control')]/following-sibling::span`,
     );
     const totalPages = await navTotal.textContent();
-    // biome-ignore lint/style/noNonNullAssertion: allowed
     return parseInt(totalPages!.replace("of", "").trim(), 10);
   }
 
@@ -116,7 +115,6 @@ export class ToolbarTable {
     const totalResultsText = await pagination
       .locator(`xpath=//button//b[not(contains (.,'-'))]`)
       .textContent();
-    // biome-ignore lint/style/noNonNullAssertion: allowed
     return parseInt(totalResultsText!.trim(), 10);
   }
 
@@ -210,7 +208,6 @@ export class ToolbarTable {
       `xpath=//button//b[contains (.,"-")]`,
     );
     const counterText = await pageCounter.textContent();
-    // biome-ignore lint/style/noNonNullAssertion: allowed
     const [min, max] = counterText!
       .split("-")
       .map((value) => parseInt(value.trim(), 10));
@@ -323,7 +320,7 @@ export class ToolbarTable {
       }
     }
     const sortedRows = [...dataRow].sort((rowA, rowB) => {
-      // biome-ignore lint/suspicious/noExplicitAny: allowed
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- allowed
       let compare: any;
       const valueA = rowA[index];
       const valueB = rowB[index];
@@ -443,13 +440,11 @@ export class ToolbarTable {
     for (const header of columnHeaders) {
       for (const order of [`ascending`, `descending`]) {
         const sorted = await this.sortColumn(header, order);
-        sorted
-          ? null
-          : (() => {
-              throw new Error(
-                `Sorting failed for the column ${header} with order ${order}`,
-              );
-            })();
+        if (!sorted) {
+          throw new Error(
+            `Sorting failed for the column ${header} with order ${order}`,
+          );
+        }
         const sourceData = await this.getTableRows(parentElem);
         const sortedData = await this.sortTable(
           await sourceData,
