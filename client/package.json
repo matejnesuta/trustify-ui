@@ -8,7 +8,7 @@
     "clean": "rimraf ./dist",
     "clean:all": "rimraf ./dist ./node_modules",
     "build": "npm run generate && vite build",
-    "lint": "eslint --max-warnings 0 .",
+    "lint": "eslint --max-warnings 0 . && tsc --noEmit -p tsconfig.app.json",
     "lint:fix": "eslint . --fix",
     "format": "prettier --check --ignore-path ../.prettierignore './src/**/*.{ts,tsx,js,json}'",
     "format:fix": "prettier --write --ignore-path ../.prettierignore './src/**/*.{ts,tsx,js,json}'",
@@ -43,7 +43,7 @@
     "react-markdown": "^8.0.7",
     "react-oidc-context": "^3.3.0",
     "react-router-dom": "^7.8.1",
-    "tsd-ui": "github:tsd-ui/tsd-ui#v0.3.2",
+    "@tsd-ui/core": "^0.3.2",
     "usehooks-ts": "^3.1.1",
     "victory": "^37.3.4",
     "yup": "^0.32.11"
