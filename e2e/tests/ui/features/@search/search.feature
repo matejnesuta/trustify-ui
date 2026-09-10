@@ -70,9 +70,6 @@ Scenario Outline: User searches for a specific "<types>"
 	|Packages|quarkus|
 	|Advisories|CVE-2022-45787|
 
-Background: Authentication
-	Given User is authenticated
-
 # Related to TC-3248: Upload Advisory button should not appear on Search page
 Scenario: Verify Upload Advisory button is not displayed on Search page
 	When User navigates to "Search" page
