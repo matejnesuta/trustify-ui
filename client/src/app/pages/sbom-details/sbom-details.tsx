@@ -37,7 +37,7 @@ import {
 import { PathParam, Paths, useRouteParams } from "@app/Routes";
 import type { SbomHead } from "@app/client";
 import { ConfirmDialog } from "@app/components/ConfirmDialog";
-import { LoadingWrapper } from "@tsd-ui/core";
+import { LoadingWrapper } from "@app/components/LoadingWrapper";
 import { NotificationsContext } from "@app/components/NotificationsContext";
 import { useDownload } from "@app/hooks/domain-controls/useDownload";
 import { useTabControls } from "@app/hooks/tab-controls";
@@ -221,8 +221,9 @@ export const SbomDetails: React.FC = () => {
                   triggerRef={vulnerabilitiesTabPopoverRef}
                   bodyContent={
                     <div>
-                      Any found vulnerabilities related to this SBOM. Fixed
-                      vulnerabilities are not listed.
+                      Any found vulnerabilities related to this SBOM. Use the
+                      &quot;Show VEX resolutions&quot; toggle to reveal
+                      vulnerabilities that have been resolved by VEX data.
                     </div>
                   }
                 />
