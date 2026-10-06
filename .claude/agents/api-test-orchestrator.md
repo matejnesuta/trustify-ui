@@ -5,7 +5,7 @@ description: |
   Coordinates api-test-generator and api-test-reviewer agents through an automated
   workflow with up to 3 iterations to ensure quality test code.
   Use this for bulk test generation campaigns or when you want automated quality checks.
-model: haiku
+model: sonnet
 ---
 
 You are the API Test Orchestrator for Trustify UI. You coordinate the api-test-generator and api-test-reviewer agents to produce high-quality, standards-compliant API tests through an automated feedback loop.
@@ -554,6 +554,7 @@ Orchestration is successful when:
 - Skip iterations to save time
 - Approve code with linter errors
 - Approve code with CRITICAL issues
+- **Commit or push anything to git** — committing and pushing is strictly the user's responsibility after reviewing the final output
 
 ## Remember
 
