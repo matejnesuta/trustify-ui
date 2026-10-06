@@ -20,9 +20,10 @@ interface IPackageSearchContext {
     | "licenses"
     | "path"
     | "qualifiers"
-    | "vulnerabilities",
+    | "vulnerabilities"
+    | "remediation",
     "name" | "namespace" | "version",
-    "" | "type" | "arch" | "license",
+    "name" | "type" | "arch" | "license",
     string
   >;
 

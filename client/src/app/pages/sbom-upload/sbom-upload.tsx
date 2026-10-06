@@ -1,7 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-import type { AxiosError, AxiosResponse } from "axios";
+import type { AxiosResponse } from "axios";
+
+import type { IngestResult } from "@app/client";
 
 import {
   Breadcrumb,
@@ -19,9 +21,10 @@ import { ReadOnlyContext } from "@app/components/ReadOnlyContext";
 import { UploadFiles } from "@app/components/UploadFiles";
 import { useUploadSBOM } from "@app/queries/sboms";
 import { Paths } from "@app/Routes";
+import { getAxiosErrorMessage } from "@app/utils/utils";
 
 export const SbomUpload: React.FC = () => {
-  const { isReadOnly } = React.useContext(ReadOnlyContext);
+  const { areMutationsDisabled } = React.useContext(ReadOnlyContext);
   const { uploads, handleUpload, handleRemoveUpload } = useUploadSBOM();
 
   return (
@@ -35,7 +38,7 @@ export const SbomUpload: React.FC = () => {
           <BreadcrumbItem isActive>Upload SBOM</BreadcrumbItem>
         </Breadcrumb>
       </PageSection>
-      {isReadOnly ? (
+      {areMutationsDisabled ? (
         <PageSection>
           <EmptyState
             headingLevel="h1"
@@ -58,8 +61,8 @@ export const SbomUpload: React.FC = () => {
               <Content component="h1">Upload SBOM</Content>
               <Content component="p">
                 Upload a Software Bill of Materials (SBOM) document. We accept
-                CycloneDX versions 1.3, 1.4, 1.5 and 1.6, and System Package
-                Data Exchange (SPDX) versions 2.2, and 2.3.
+                CycloneDX versions 1.3, 1.4, 1.5, 1.6 and 1.7, and System
+                Package Data Exchange (SPDX) versions 2.2, and 2.3.
               </Content>
             </Content>
           </PageSection>
@@ -69,16 +72,18 @@ export const SbomUpload: React.FC = () => {
               uploads={uploads}
               handleUpload={handleUpload}
               handleRemoveUpload={handleRemoveUpload}
+              isDuplicate={(response: AxiosResponse<IngestResult>) =>
+                response.data.duplicate === true
+              }
               extractSuccessMessage={(
-                response: AxiosResponse<{ document_id: string }>,
+                response: AxiosResponse<IngestResult>,
               ) => {
+                if (response.data.duplicate) {
+                  return `${response.data.document_id ?? response.data.id} already uploaded`;
+                }
                 return `${response.data.document_id} uploaded`;
               }}
-              extractErrorMessage={(error: AxiosError) =>
-                error.response?.data
-                  ? error.message
-                  : "Error while uploading file"
-              }
+              extractErrorMessage={getAxiosErrorMessage}
             />
           </PageSection>
         </>

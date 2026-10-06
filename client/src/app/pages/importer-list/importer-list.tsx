@@ -36,10 +36,7 @@ import {
   type ConfirmDialogProps,
 } from "@app/components/ConfirmDialog";
 import { NotificationsContext } from "@app/components/NotificationsContext";
-import {
-  readOnlyActionProps,
-  ReadOnlyContext,
-} from "@app/components/ReadOnlyContext";
+import { ReadOnlyContext } from "@app/components/ReadOnlyContext";
 import {
   useFetchImporterReports,
   useFetchImporters,
@@ -56,7 +53,6 @@ import {
   forceRunImporter,
 } from "@app/client";
 import { FilterToolbar, FilterType } from "@app/components/FilterToolbar";
-import { IconedStatus } from "@app/components/IconedStatus";
 import { SimplePagination } from "@app/components/SimplePagination";
 import {
   ConditionalTableBody,
@@ -65,9 +61,13 @@ import {
 } from "@app/components/TableControls";
 import { useLocalTableControls } from "@app/hooks/table-controls";
 
+import CheckCircleIcon from "@patternfly/react-icons/dist/esm/icons/check-circle-icon";
+import ExclamationCircleIcon from "@patternfly/react-icons/dist/esm/icons/exclamation-circle-icon";
+import InProgressIcon from "@patternfly/react-icons/dist/esm/icons/in-progress-icon";
+import PendingIcon from "@patternfly/react-icons/dist/esm/icons/pending-icon";
+
 import { ANSICOLOR } from "@app/Constants";
 import { ImporterProgress } from "./components/importer-progress";
-import { ImporterStatusIcon } from "./components/importer-status-icon";
 import { DocumentMetadata } from "@app/components/DocumentMetadata";
 
 type ImporterStatus = "disabled" | "scheduled" | "running";
@@ -87,7 +87,7 @@ const getImporterStatus = (importer: Importer): ImporterStatus => {
 
 export const ImporterList: React.FC = () => {
   const { pushNotification } = React.useContext(NotificationsContext);
-  const { isReadOnly } = React.useContext(ReadOnlyContext);
+  const { areMutationsDisabled } = React.useContext(ReadOnlyContext);
 
   // Actions that each row can trigger
   type RowAction = "enable" | "disable" | "run";
@@ -383,8 +383,16 @@ export const ImporterList: React.FC = () => {
                             <Label color="orange">Disabled</Label>
                           ) : importerStatus === "running" && item.progress ? (
                             <ImporterProgress value={item.progress} />
+                          ) : importerStatus === "running" ? (
+                            <Label color="blue" icon={<InProgressIcon />}>
+                              Running
+                            </Label>
+                          ) : item.state === "waiting" ? (
+                            <Label color="blue" icon={<PendingIcon />}>
+                              Scheduled
+                            </Label>
                           ) : (
-                            <ImporterStatusIcon state={item.state} />
+                            <Label>Not started</Label>
                           )}
                         </Td>
                         <Td isActionCell>
@@ -397,7 +405,7 @@ export const ImporterList: React.FC = () => {
                                       onClick: () => {
                                         prepareActionOnRow("enable", item);
                                       },
-                                      ...readOnlyActionProps(isReadOnly),
+                                      isDisabled: areMutationsDisabled,
                                     },
                                   ]
                                 : [
@@ -406,17 +414,16 @@ export const ImporterList: React.FC = () => {
                                       onClick: () => {
                                         prepareActionOnRow("run", item);
                                       },
-                                      isAriaDisabled:
-                                        isReadOnly ||
-                                        importerStatus === "running",
-                                      ...readOnlyActionProps(isReadOnly),
+                                      isDisabled:
+                                        importerStatus === "running" ||
+                                        areMutationsDisabled,
                                     },
                                     {
                                       title: "Disable",
                                       onClick: () => {
                                         prepareActionOnRow("disable", item);
                                       },
-                                      ...readOnlyActionProps(isReadOnly),
+                                      isDisabled: areMutationsDisabled,
                                     },
                                   ]),
                             ]}
@@ -669,24 +676,15 @@ export const ImporterExpandedArea: React.FC<ImporterExpandedAreaProps> = ({
           numRenderedColumns={numRenderedColumns}
         >
           {currentPageItems?.map((item, rowIndex) => {
-            const LogButton = ({ children }: { children: React.ReactNode }) => {
-              if (item.messages) {
-                return (
-                  <Button
-                    isInline
-                    variant="link"
-                    onClick={() => {
-                      const newLogData = messagesToLogData(item.messages ?? {});
-                      setLogData(newLogData);
-                      toggleLogModal();
-                    }}
-                  >
-                    {children}
-                  </Button>
-                );
-              }
-              return children;
-            };
+            const statusIcon = item.error ? (
+              <Label color="red" icon={<ExclamationCircleIcon />}>
+                {item.error}
+              </Label>
+            ) : (
+              <Label color="green" icon={<CheckCircleIcon />}>
+                Finished successfully
+              </Label>
+            );
 
             return (
               <Tbody key={item.id}>
@@ -723,18 +721,22 @@ export const ImporterExpandedArea: React.FC<ImporterExpandedAreaProps> = ({
                       {...getTdProps({ columnKey: "status" })}
                     >
                       {item.isRunning ? (
-                        <ImporterStatusIcon state="running" />
+                        <Label color="blue" icon={<InProgressIcon />}>
+                          Running
+                        </Label>
+                      ) : item.messages ? (
+                        <Button
+                          isInline
+                          variant="link"
+                          onClick={() => {
+                            setLogData(messagesToLogData(item.messages ?? {}));
+                            toggleLogModal();
+                          }}
+                        >
+                          {statusIcon}
+                        </Button>
                       ) : (
-                        <LogButton>
-                          {item.error ? (
-                            <IconedStatus preset="Failed" label={item.error} />
-                          ) : (
-                            <IconedStatus
-                              preset="Completed"
-                              label="Finished successfully"
-                            />
-                          )}
-                        </LogButton>
+                        statusIcon
                       )}
                     </Td>
                     <Td

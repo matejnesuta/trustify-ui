@@ -24,12 +24,14 @@ import { SbomSearchContext } from "./sbom-context";
 
 interface ISbomProvider {
   sbomGroupId?: string;
+  cryptoAlgorithms?: string[];
   isBulkSelectionEnabled?: boolean;
   children: React.ReactNode;
 }
 
 export const SbomSearchProvider: React.FunctionComponent<ISbomProvider> = ({
   sbomGroupId,
+  cryptoAlgorithms,
   isBulkSelectionEnabled,
   children,
 }) => {
@@ -72,7 +74,7 @@ export const SbomSearchProvider: React.FunctionComponent<ISbomProvider> = ({
     isFilterEnabled: true,
     filterCategories: [
       {
-        categoryKey: FILTER_TEXT_CATEGORY_KEY,
+        categoryKey: "name",
         title: "Filter text",
         placeholderText: "Search",
         type: FilterType.search,
@@ -133,6 +135,9 @@ export const SbomSearchProvider: React.FunctionComponent<ISbomProvider> = ({
     (tableControlState.filterState.filterValues.labels ?? []).map((label) =>
       splitStringAsKeyValue(label),
     ),
+    false,
+    true,
+    cryptoAlgorithms,
   );
 
   const tableControls = useTableControlProps({
@@ -152,6 +157,7 @@ export const SbomSearchProvider: React.FunctionComponent<ISbomProvider> = ({
   return (
     <SbomSearchContext.Provider
       value={{
+        sbomGroupId,
         totalItemCount,
         isFetching,
         fetchError,

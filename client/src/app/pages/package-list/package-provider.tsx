@@ -51,6 +51,7 @@ export const PackageSearchProvider: React.FunctionComponent<
       version: "Version",
       type: "Type",
       licenses: "Licenses",
+      remediation: "Remediations",
       path: "Path",
       qualifiers: "Qualifiers",
       vulnerabilities: "Vulnerabilities",
@@ -61,7 +62,7 @@ export const PackageSearchProvider: React.FunctionComponent<
     isFilterEnabled: true,
     filterCategories: [
       {
-        categoryKey: FILTER_TEXT_CATEGORY_KEY,
+        categoryKey: "name",
         title: "Filter text",
         placeholderText: "Search",
         type: FilterType.search,

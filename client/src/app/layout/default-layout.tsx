@@ -21,7 +21,7 @@ interface DefaultLayoutProps {
 }
 
 export const DefaultLayout: React.FC<DefaultLayoutProps> = ({ children }) => {
-  const { isReadOnly } = React.useContext(ReadOnlyContext);
+  const { areMutationsDisabled } = React.useContext(ReadOnlyContext);
   const pageId = "main-content-page-layout-horizontal-nav";
   const PageSkipToContent = (
     <SkipToContent href={`#${pageId}`}>Skip to content</SkipToContent>
@@ -35,7 +35,7 @@ export const DefaultLayout: React.FC<DefaultLayoutProps> = ({ children }) => {
       skipToContent={PageSkipToContent}
       mainContainerId={pageId}
     >
-      {isReadOnly && (
+      {areMutationsDisabled && (
         <Banner
           isSticky
           status="info"
