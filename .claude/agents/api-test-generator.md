@@ -142,33 +142,16 @@ test.describe("Recommendation API - Empty Results", () => {
 });
 ```
 
-### Step 3: Ask The User To Provide Test Data
+### Step 3: Request Test Data from User
 
-**For file upload endpoints** (POST with multipart/form-data):
+**For file upload endpoints** (POST with multipart/form-data), ask the user before generating:
 
-**Scan** for existing dataset files:
-- SBOMs: `*.json`, `*.xml` (SPDX, CycloneDX)
-- CSAFs: advisory documents
-- VEXes: vulnerability exchange
-
-**Use existing files** - DO NOT create new ones:
-```typescript
-test("Upload SBOM", async ({ axios }) => {
-  // Use existing file: e2e/tests/api/data/quarkus-sbom.json
-  const fs = require('fs');
-  const filePath = path.join(__dirname, '../data/quarkus-sbom.json');
-  const fileContent = fs.readFileSync(filePath);
-
-  const formData = new FormData();
-  formData.append('file', fileContent, 'quarkus-sbom.json');
-
-  const response = await axios.post('/api/v2/sbom', formData, {
-    headers: formData.getHeaders(),
-  });
-
-  expect(response.status).toBe(201);
-});
 ```
+This endpoint requires a file upload. Please provide the path to a test file
+(e.g. a SBOM JSON, CSAF document, or VEX file) to use as test data.
+```
+
+Do not scan for files or invent paths — wait for the user to supply one.
 
 **IMPORTANT**: Focus on API contract testing, NOT data format variations.
 
@@ -181,51 +164,7 @@ test("Upload SBOM", async ({ axios }) => {
 - Complex operation
 - **Bugfix/regression test** (requires Jira ID)
 
-**Generate appropriate test**:
-
-**Happy path example**:
-```typescript
-test("List advisories", async ({ axios }) => {
-  const response = await axios.get("/api/v2/advisory?limit=10&offset=0");
-
-  expect(response.status).toBe(200);
-  expect(response.data).toEqual(
-    expect.objectContaining({
-      total: expect.any(Number),
-      items: expect.any(Array),
-    }),
-  );
-});
-```
-
-**Parameter variation example**:
-```typescript
-test("List advisories with complex query", async ({ axios }) => {
-  const queryParams = new URLSearchParams();
-  queryParams.append("offset", "0");
-  queryParams.append("limit", "10");
-  queryParams.append("sort", "modified:desc");
-  queryParams.append("q", "title=RHSA&average_severity=critical");
-
-  const response = await axios.get("/api/v2/advisory", {
-    params: queryParams,
-  });
-
-  expect(response.status).toBe(200);
-  expect(response.data.items.length).toBeLessThanOrEqual(10);
-});
-```
-
-**Negative test example**:
-```typescript
-test("Rejects invalid query syntax", async ({ axios }) => {
-  const response = await axios
-    .get("/api/v2/advisory?q=invalid_field=value")
-    .catch((err) => err.response);
-
-  expect(response.status).toBe(400);
-});
-```
+Follow the patterns in [API Test Standards](../shared/api-test-standards.md) for each test type. See the Quick Reference Checklist for the correct patterns for imports, URLSearchParams, assertions, and error handling.
 
 **File naming**:
 - Use domain name: `advisory.ts`, `sbom.ts`, `vulnerability.ts`
@@ -363,35 +302,7 @@ When orchestrator provides feedback from reviewer:
 
 **CRITICAL**: Only fix the tests YOU generated. Leave existing tests untouched.
 
-**Common fixes**:
-
-**Missing URLSearchParams**:
-```typescript
-// Before (wrong):
-const response = await axios.get("/api/v2/endpoint?q=foo&bar=baz");
-
-// After (correct):
-const queryParams = new URLSearchParams();
-queryParams.append("q", "foo");
-queryParams.append("bar", "baz");
-const response = await axios.get("/api/v2/endpoint", {
-  params: queryParams,
-});
-```
-
-**Weak assertions**:
-```typescript
-// Before (weak):
-expect(response.data).toBeDefined();
-
-// After (strong):
-expect(response.data).toEqual(
-  expect.objectContaining({
-    total: expect.any(Number),
-    items: expect.any(Array),
-  }),
-);
-```
+Apply fixes following the [API Test Standards](../shared/api-test-standards.md) — the reviewer's feedback will include specific file locations and suggested corrections.
 
 ### Step 3: Re-run Newly Added Tests
 

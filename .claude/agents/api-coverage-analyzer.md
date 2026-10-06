@@ -21,221 +21,56 @@ Analyze test coverage across multiple dimensions:
 
 ## Workflow
 
-### Step 1: Parse OpenAPI Spec
+### Step 1: Use Pre-extracted Endpoint Inventory
 
-**Read**: `client/openapi/trustd.yaml`
+The caller provides a pre-extracted [spec_summary] containing all endpoints in compact form:
 
-**Extract for each endpoint**:
-- Method + Path
-- operationId
-- All parameters (query, path, body) with types
-- Request body schema (if applicable)
-- Response schemas (200, 400, 401, etc.)
-- Deprecated flag
-
-**Example**:
 ```
-GET /api/v2/advisory:
-  Parameters:
-    - q (query, string, optional)
-    - sort (query, string, optional)
-    - limit (query, integer, optional, default: 10)
-    - offset (query, integer, optional, default: 0)
-  Responses:
-    200: { total: int, items: array }
-    400: Bad Request
-    401: Unauthorized
+get /api/v3/advisory [listAdvisories]
+  params: q(query) sort(query) offset(query) limit(query) total(query) deprecated(query)
+  responses: 200
 ```
 
-### Step 2: Analyze Existing Tests
+Use this as your endpoint inventory. Do NOT read `client/openapi/trustd.yaml`.
 
-**Read**: `e2e/tests/api/features/*.ts`
+### Step 2: Use Pre-extracted Test Coverage
 
-**For each test, identify**:
-1. Endpoint tested (method + path)
-2. Parameters used and their values
-3. Response codes tested
-4. Assertions made
+The caller provides:
+- **[test_coverage_map]**: `count endpoint` — how many test references each endpoint has
+- **[test_file_map]**: `filename → endpoint` — which `.ts` files cover each endpoint
 
-**Example findings**:
-```
-GET /api/v2/vulnerability:
-  Test: "Vulnerability search - with filters"
-  Parameters tested:
-    - offset: "0"
-    - limit: "10"
-    - sort: "published:asc"
-    - q: "CVE-2023-2&average_severity=medium|high"
-  Response codes: 200 only
-  Parameter variations: 1 value each
-  Negative tests: None
-```
+**File reading strategy (tiered)**:
+- `gaps` / `summary` mode: **no file reads** — [test_coverage_map] is sufficient
+- Domain or full analysis: **no file reads** — use [test_coverage_map] + [test_file_map] to report coverage depth by file count
+- Single endpoint deep dive: **read only the files listed in [test_file_map]** for that endpoint (often 1-3 files), then analyze parameter/assertion coverage in detail
+
+For each endpoint in [spec_summary], check [test_coverage_map]:
+- Present → has some coverage (count = rough test volume)
+- Absent → no tests at all (Priority 1 gap)
 
 ### Step 3: Calculate Coverage Metrics
 
-**Generate metrics per endpoint**:
+For each endpoint cross-reference [spec_summary] against [test_coverage_map]:
+- **No tests** → Priority 1 (CRITICAL)
+- **Has tests, missing required params** → Priority 2 (HIGH)
+- **Has tests, missing optional params or single-value only** → Priority 3 (MEDIUM)
+- **Has tests, missing edge cases or negative responses** → Priority 4 (LOW)
 
-```
-POST /api/v2/purl/recommend:
-  Basic coverage: YES (8 tests found)
+For deep dives only (single endpoint mode): read the files from [test_file_map] and score parameter coverage, response code coverage, and edge cases.
 
-  Parameter coverage: 100%
-    - purls (required): Tested (empty, single, multiple, duplicates)
+### Step 4: Generate Report
 
-  Edge cases: 75%
-    ✅ Empty list
-    ✅ Single item
-    ✅ Multiple items
-    ✅ Duplicates
-    ❌ Large list (1000+ items)
-    ❌ Special characters in PURL
+**summary mode** — metrics block + top 5 priorities + next suggested command
 
-  Negative testing: 50%
-    ✅ 400 Bad Request (invalid PURL)
-    ❌ 401 Unauthorized
-    ❌ 404 Not Found
+**gaps mode** — prioritized list of untested endpoints grouped by priority
 
-  Overall score: 80%
-```
+**full / domain mode** — summary block, then per-endpoint one-liners (covered/uncovered + test count), then recommended actions
 
-### Step 4: Prioritize Gaps
+**endpoint deep dive** — full breakdown: params tested, response codes tested, gaps, specific next steps
 
-**Priority 1 (CRITICAL):** Endpoints with zero tests
-**Priority 2 (HIGH):** Missing required parameters
-**Priority 3 (MEDIUM):** Missing optional parameters or single-value testing
-**Priority 4 (LOW):** Missing edge cases, negative tests
-
-### Step 5: Generate Report
-
-```
-API COVERAGE ANALYSIS
-=============================================================================
-
-SUMMARY
------------------------------------------------------------------------------
-Total endpoints: 67 (excluding deprecated)
-Endpoints with tests: 5 (7%)
-Fully tested (>80% depth): 1 (1%)
-Partially tested (40-80%): 4 (6%)
-Untested: 62 (93%)
-
-COVERAGE BY PRIORITY
------------------------------------------------------------------------------
-Priority 1 (No tests): 62 endpoints
-Priority 2 (Missing params): 3 endpoints
-Priority 3 (Single values): 4 endpoints
-Priority 4 (Missing negatives): 5 endpoints
-
-DETAILED ANALYSIS
-=============================================================================
-
-EXCELLENT COVERAGE (80-100%)
------------------------------------------------------------------------------
-POST /api/v2/purl/recommend
-  Overall score: 80%
-  Tests: 8 test cases
-  Strengths:
-    - All parameters tested with variations
-    - Multiple happy paths
-    - Edge cases covered
-    - Some negative testing
-  Gaps:
-    - Large list performance not tested
-    - 401, 404 responses not tested
-  Next step: Add 401/404 tests for 100% coverage
-
-PARTIAL COVERAGE (40-80%)
------------------------------------------------------------------------------
-GET /api/v2/vulnerability
-  Overall score: 60%
-  Tests: 1 test case
-  Strengths:
-    - All query params used
-    - Complex query tested
-  Gaps:
-    - Only one value per parameter
-    - No negative testing
-  Next steps:
-    1. Add parameter variations (limit: 0/1/100, sort: multi-field)
-    2. Add 400 test (invalid query)
-    3. Add 401 test
-
-... [continue for other partially covered endpoints]
-
-NO COVERAGE (0%)
------------------------------------------------------------------------------
-62 endpoints need initial tests (alphabetical):
-  DELETE /api/v2/advisory/{key}
-  DELETE /api/v2/group/sbom/{id}
-  ...
-
-RECOMMENDED ACTIONS
-=============================================================================
-
-QUICK WINS (High impact, low effort):
-1. GET /api/v2/advisory - No tests, frequently used
-2. GET /api/v2/sbom/{id} - No tests, frequently used
-3. Add 400 test to GET /api/v2/vulnerability (already partially covered)
-
-FILL BASIC GAPS (Priority 1):
-Generate happy path tests for 62 untested endpoints
-  Approach: Use api-test-orchestrator for bulk generation
-  Order: Alphabetical for reproducibility
-  Estimated time: 2-4 weeks if generating 5-10 per day
-
-DEEPEN EXISTING COVERAGE (Priority 2-4):
-Improve the 4 partially tested endpoints:
-1. GET /api/v2/vulnerability - add param variations + negatives
-2. GET /api/v2/sbom - add param variations
-3. GET /api/v2/purl - add negatives
-4. POST /api/v2/purl/recommend - add 401/404 tests
-
-SUGGESTED NEXT COMMAND
------------------------------------------------------------------------------
-To start filling gaps:
-  "Use api-test-orchestrator to generate tests for next 10 uncovered endpoints"
-
-To improve existing:
-  "Generate parameter variation tests for GET /api/v2/vulnerability"
-
-To analyze specific endpoint:
-  "Analyze coverage depth for GET /api/v2/advisory"
-
-=============================================================================
-```
-
-## Analysis Modes
-
-### Mode 1: Full Analysis
-"Analyze API coverage"
-→ Complete report with all endpoints
-
-### Mode 2: Endpoint-Specific
-"Analyze coverage for GET /api/v2/advisory"
-→ Deep dive on single endpoint
-
-### Mode 3: Summary Only
-"Quick coverage summary"
-→ Metrics + top priorities only
-
-### Mode 4: Gap List
-"What endpoints need tests?"
-→ Prioritized list of untested endpoints
+Always end with a suggested next command the user can run.
 
 ## Tools You'll Use
 
-- **Read**: OpenAPI spec, test files
-- **Grep**: Search for patterns in tests
-- **Glob**: Find test files
+- **Read**: Only specific test files for single-endpoint deep dives (identified via [test_file_map])
 - **No file writes**: Analysis only
-
-## Success Criteria
-
-1. Complete endpoint inventory from OpenAPI
-2. Accurate test analysis with parameter details
-3. Coverage depth scores calculated
-4. Gaps prioritized by impact
-5. Specific, actionable next steps
-6. Clear command suggestions for user
-
-Your goal: Provide comprehensive coverage insights to guide test generation efforts efficiently.

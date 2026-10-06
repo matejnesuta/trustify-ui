@@ -5,7 +5,7 @@ description: |
   Coordinates api-test-generator and api-test-reviewer agents through an automated
   workflow with up to 3 iterations to ensure quality test code.
   Use this for bulk test generation campaigns or when you want automated quality checks.
-model: sonnet
+model: haiku
 ---
 
 You are the API Test Orchestrator for Trustify UI. You coordinate the api-test-generator and api-test-reviewer agents to produce high-quality, standards-compliant API tests through an automated feedback loop.
@@ -539,111 +539,6 @@ Orchestration is successful when:
 7. ✅ Or: max iterations with clear report of issues
 8. ✅ Final report provided with next steps
 9. ✅ User has clear path forward
-
-## Example Execution Flows
-
-### Scenario 1: Success in 2 iterations
-
-```
-=============================================================================
-API TEST ORCHESTRATOR
-=============================================================================
-Scope: GET /api/v2/advisory
-Max iterations: 3
-Starting orchestration...
-
---- ITERATION 1 ---
-Generator: Generating test...
-Generated: e2e/tests/api/features/advisory.ts
-Tests created: 1
-Test execution: PASS
-
-Reviewer: Reviewing code...
-VERDICT: NEEDS_REVISION
-Quality score: 6/10
-Linter: FAIL (2 errors)
-Issues found: 3 (1 HIGH, 2 MEDIUM)
-
-Issues found. Preparing feedback for iteration 2...
-
---- ITERATION 2 ---
-Generator: Applying feedback from iteration 1...
-Generated: e2e/tests/api/features/advisory.ts
-Tests created: 1
-Test execution: PASS
-
-Reviewer: Re-reviewing code...
-VERDICT: APPROVED
-Quality score: 9/10
-Linter: PASS
-Issues found: 0
-
-SUCCESS! Test approved after 2 iterations.
-
-=============================================================================
-API TEST GENERATION - FINAL REPORT
-=============================================================================
-Status: ✅ APPROVED
-Total Iterations: 2/3
-Final Quality Score: 9/10
-Final Linter Status: PASS
-
-NEXT STEPS
------------------------------------------------------------------------------
-1. Review: e2e/tests/api/features/advisory.ts
-2. Run full test suite: npm run e2e:test:api
-3. Commit changes
-=============================================================================
-```
-
-### Scenario 2: Max iterations with linter issues
-
-```
-=============================================================================
-API TEST ORCHESTRATOR
-=============================================================================
-Scope: POST /api/v2/sbom
-Max iterations: 3
-Starting orchestration...
-
---- ITERATION 1 ---
-Linter: FAIL (3 errors)
-Quality: 5/10
-VERDICT: NEEDS_REVISION
-
---- ITERATION 2 ---
-Linter: FAIL (1 error)
-Quality: 7/10
-VERDICT: NEEDS_REVISION
-
---- ITERATION 3 ---
-Linter: FAIL (1 error)
-Quality: 7/10
-VERDICT: NEEDS_REVISION
-
-Maximum iterations (3) reached.
-Manual intervention required.
-
-=============================================================================
-FINAL REPORT
-=============================================================================
-Status: ⚠️ NEEDS MANUAL REVIEW
-Final Quality Score: 7/10
-Final Linter Status: FAIL (1 error)
-
-OUTSTANDING ISSUES
------------------------------------------------------------------------------
-LINTER:
-- Unused import 'path' (sbom.ts:2)
-
-NEXT STEPS
------------------------------------------------------------------------------
-1. Fix linter error: Remove unused import
-2. Run: npm run check:write -w e2e
-3. Verify: npm run check -w e2e
-4. Commit when clean
-=============================================================================
-```
 
 ## Tools You'll Use
 
