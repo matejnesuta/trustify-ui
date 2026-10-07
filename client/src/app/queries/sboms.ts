@@ -62,11 +62,19 @@ export const useFetchSBOMs = (
   labels: Label[] = [],
   disableQuery = false,
   advisories = false,
+  cryptoAlgorithms?: string[],
 ) => {
   const labelQuery = labelRequestParamsQuery(labels);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: [SBOMsQueryKey, groupId, params, labelQuery, advisories],
+    queryKey: [
+      SBOMsQueryKey,
+      groupId,
+      params,
+      labelQuery,
+      advisories,
+      cryptoAlgorithms,
+    ],
     queryFn: () => {
       const { q, ...rest } = requestParamsQuery(params);
       return listSboms({
@@ -76,6 +84,7 @@ export const useFetchSBOMs = (
           group: groupId ? [groupId] : [],
           q: [q, labelQuery].filter((e) => e).join("&"),
           advisories,
+          ...(cryptoAlgorithms?.length ? { crypto: cryptoAlgorithms } : {}),
         },
       });
     },
@@ -215,13 +224,17 @@ export const useFetchSbomsByPackageId = (
   };
 };
 
-export const useFetchSbomsAdvisory = (sbomId: string) => {
+export const useFetchSbomsAdvisory = (
+  sbomId: string,
+  includeResolved = false,
+) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: [SBOMsQueryKey, sbomId, "advisory"],
+    queryKey: [SBOMsQueryKey, sbomId, "advisory", { includeResolved }],
     queryFn: () => {
       return getSbomAdvisories({
         client,
         path: { id: sbomId },
+        query: { include_resolved: includeResolved || undefined },
       });
     },
   });
@@ -237,7 +250,12 @@ export const useFetchSbomsAdvisoryBatch = (sbomIds: string[]) => {
   const userQueries = useQueries({
     queries: sbomIds.map((sbomId) => {
       return {
-        queryKey: [SBOMsQueryKey, sbomId, "advisory"],
+        queryKey: [
+          SBOMsQueryKey,
+          sbomId,
+          "advisory",
+          { includeResolved: false },
+        ],
         queryFn: () => {
           return getSbomAdvisories({
             client,
