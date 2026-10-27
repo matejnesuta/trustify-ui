@@ -5,7 +5,7 @@ const BASE_IMPORTER_CONFIG = {
     disabled: true,
     period: "1day",
     description: "GitHub Advisory Database",
-    source: "https://github.com/matejnesuta/sample_advisories",
+    source: "https://github.com/trustification/sample_advisories",
     path: "advisories",
   },
 };
@@ -14,11 +14,9 @@ test.describe("Importer CRUD operations", () => {
   test("Create importer and verify it exists", async ({ axios }) => {
     const importerName = "api-test-create-importer";
 
-    await axios
-      .delete(`/api/v3/importer/${importerName}`, {
-        validateStatus: () => true,
-      })
-      .catch(() => undefined);
+    await axios.delete(`/api/v3/importer/${importerName}`, {
+      validateStatus: (status) => status === 204 || status === 404,
+    });
 
     try {
       const createResponse = await axios.post(
@@ -44,11 +42,9 @@ test.describe("Importer CRUD operations", () => {
   test("Edit importer using PATCH request", async ({ axios }) => {
     const importerName = "api-test-patch-importer";
 
-    await axios
-      .delete(`/api/v3/importer/${importerName}`, {
-        validateStatus: () => true,
-      })
-      .catch(() => undefined);
+    await axios.delete(`/api/v3/importer/${importerName}`, {
+      validateStatus: (status) => status === 204 || status === 404,
+    });
     await axios.post(`/api/v3/importer/${importerName}`, BASE_IMPORTER_CONFIG);
 
     try {
@@ -86,11 +82,9 @@ test.describe("Importer CRUD operations", () => {
   test("Edit importer using PUT request", async ({ axios }) => {
     const importerName = "api-test-put-importer";
 
-    await axios
-      .delete(`/api/v3/importer/${importerName}`, {
-        validateStatus: () => true,
-      })
-      .catch(() => undefined);
+    await axios.delete(`/api/v3/importer/${importerName}`, {
+      validateStatus: (status) => status === 204 || status === 404,
+    });
     await axios.post(`/api/v3/importer/${importerName}`, BASE_IMPORTER_CONFIG);
 
     try {
@@ -129,27 +123,31 @@ test.describe("Importer CRUD operations", () => {
   }) => {
     const importerName = "api-test-delete-importer";
 
-    await axios
-      .delete(`/api/v3/importer/${importerName}`, {
-        validateStatus: () => true,
-      })
-      .catch(() => undefined);
+    await axios.delete(`/api/v3/importer/${importerName}`, {
+      validateStatus: (status) => status === 204 || status === 404,
+    });
     await axios.post(`/api/v3/importer/${importerName}`, BASE_IMPORTER_CONFIG);
 
-    const beforeDeleteResponse = await axios.get(
-      `/api/v3/importer/${importerName}`,
-    );
-    expect(beforeDeleteResponse.status).toBe(200);
+    try {
+      const beforeDeleteResponse = await axios.get(
+        `/api/v3/importer/${importerName}`,
+      );
+      expect(beforeDeleteResponse.status).toBe(200);
 
-    const deleteResponse = await axios.delete(
-      `/api/v3/importer/${importerName}`,
-    );
-    expect(deleteResponse.status).toBe(204);
+      const deleteResponse = await axios.delete(
+        `/api/v3/importer/${importerName}`,
+      );
+      expect(deleteResponse.status).toBe(204);
 
-    const notFoundResponse = await axios.get(
-      `/api/v3/importer/${importerName}`,
-      { validateStatus: () => true },
-    );
-    expect(notFoundResponse.status).toBe(404);
+      const notFoundResponse = await axios.get(
+        `/api/v3/importer/${importerName}`,
+        { validateStatus: () => true },
+      );
+      expect(notFoundResponse.status).toBe(404);
+    } finally {
+      await axios
+        .delete(`/api/v3/importer/${importerName}`)
+        .catch(() => undefined);
+    }
   });
 });
