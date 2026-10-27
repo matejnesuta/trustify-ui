@@ -133,7 +133,7 @@ export class SearchPage {
   }
 
   getAutoFillMenuLinks() {
-    return this.getAutoFillMenu().locator("li[role='none'] a");
+    return this.getAutoFillMenu().locator(":scope > a");
   }
 
   async totalAutoFillResults(): Promise<number> {
