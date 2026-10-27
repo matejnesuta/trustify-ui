@@ -12,7 +12,7 @@ import {
 } from "@app/client";
 import { requestParamsQuery } from "@app/hooks/table-controls";
 
-export const VulnerabilitiesQueryKey = "vulnerabilities";
+const VulnerabilitiesQueryKey = "vulnerabilities";
 
 export const useFetchVulnerabilities = (
   params: HubRequestParams = {},
@@ -40,23 +40,29 @@ export const useFetchVulnerabilities = (
   };
 };
 
-export const useFetchVulnerabilitiesByPackageIds = (ids: string[]) => {
+export const useFetchVulnerabilitiesByPackageIds = (
+  ids: string[],
+  includeResolved = false,
+) => {
   const chunkedIds = ids.reduce<string[][]>((chunks, item, index) => {
     if (index % 100 === 0) {
       chunks.push([item]);
     } else {
-      chunks[chunks.length - 1].push(item);
+      chunks[chunks.length - 1]!.push(item);
     }
     return chunks;
   }, []);
 
   const userQueries = useQueries({
     queries: chunkedIds.map((chunkIds) => ({
-      queryKey: [VulnerabilitiesQueryKey, chunkIds],
+      queryKey: [VulnerabilitiesQueryKey, chunkIds, { includeResolved }],
       queryFn: async () => {
         const response = await analyzeV3({
           client,
-          body: { purls: chunkIds },
+          body: {
+            purls: chunkIds,
+            include_resolved: includeResolved || undefined,
+          },
         });
         return response.data ?? null;
       },

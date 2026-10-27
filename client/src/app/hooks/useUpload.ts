@@ -15,7 +15,7 @@ interface PromiseConfig<T, E> {
   formData: FormData;
   config: AxiosRequestConfig;
 
-  thenFn: (response: AxiosResponse<T>) => void;
+  thenFn: (response: AxiosResponse<T>) => Promise<void>;
   catchFn: (error: AxiosError<E>) => void;
 }
 
@@ -156,24 +156,29 @@ export const useUpload = <T, E>({
   onError?: (error: AxiosError<E>, file: File) => void;
 }) => {
   const [state, dispatch] = React.useReducer(reducer, initialState<T, E>());
+  const uploadTokensRef = React.useRef(new Map<File, symbol>());
 
-  const handleUpload = (acceptedFiles: File[]) => {
+  const handleUpload = (acceptedFiles: File[]): Promise<void> => {
     const queue: PromiseConfig<T, E>[] = [];
+    const successCallbacks: Array<Promise<void>> = [];
 
     for (let index = 0; index < acceptedFiles.length; index++) {
-      const file = acceptedFiles[index];
+      const file = acceptedFiles[index]!;
 
       // Upload
       const formData = new FormData();
       formData.set(FORM_DATA_FILE_KEY, file);
 
       const cancelFn = axios.CancelToken.source();
+      const token = Symbol();
+      uploadTokensRef.current.set(file, token);
 
       const config: AxiosRequestConfig = {
         headers: {
           "X-Requested-With": "XMLHttpRequest",
         },
         onUploadProgress: (progressEvent) => {
+          if (uploadTokensRef.current.get(file) !== token) return;
           const total = progressEvent.total ?? 1;
           const progress = (progressEvent.loaded / total) * 100;
           dispatch({
@@ -192,16 +197,25 @@ export const useUpload = <T, E>({
         },
       });
 
-      const thenFn = (response: AxiosResponse<T>) => {
+      const thenFn = async (response: AxiosResponse<T>) => {
+        if (uploadTokensRef.current.get(file) !== token) return;
         dispatch({
           type: "finishUploadSuccessfully",
           payload: { file, response },
         });
-
-        if (onSuccess) onSuccess(response, file);
+        if (onSuccess) {
+          successCallbacks.push(
+            Promise.resolve()
+              .then(() => onSuccess(response, file))
+              .catch(() => {
+                // callback failure must not reclassify a successful upload
+              }),
+          );
+        }
       };
 
       const catchFn = (error: AxiosError<E>) => {
+        if (uploadTokensRef.current.get(file) !== token) return;
         dispatch({
           type: "finishUploadWithError",
           payload: { file, error },
@@ -222,20 +236,24 @@ export const useUpload = <T, E>({
       queue.push(promiseConfig);
     }
 
-    if (parallel) {
-      for (const item of queue) {
-        uploadFn(item.formData, item.config)
-          .then(item.thenFn)
-          .catch(item.catchFn);
-      }
-    } else {
-      queue.reduce(async (prev, next) => {
-        await prev;
-        return uploadFn(next.formData, next.config)
-          .then(next.thenFn)
-          .catch(next.catchFn);
-      }, Promise.resolve());
-    }
+    const uploadChain = parallel
+      ? Promise.all(
+          queue.map((item) =>
+            uploadFn(item.formData, item.config)
+              .then(item.thenFn)
+              .catch(item.catchFn),
+          ),
+        ).then(() => undefined)
+      : queue.reduce(async (prev, next) => {
+          await prev;
+          return uploadFn(next.formData, next.config)
+            .then(next.thenFn)
+            .catch(next.catchFn);
+        }, Promise.resolve<void>(undefined));
+
+    return uploadChain
+      .then(() => Promise.all(successCallbacks))
+      .then(() => undefined);
   };
 
   const handleCancelUpload = (file: File) => {
@@ -243,6 +261,8 @@ export const useUpload = <T, E>({
   };
 
   const handleRemoveUpload = (file: File) => {
+    uploadTokensRef.current.delete(file);
+    state.uploads.get(file)?.cancelFn?.cancel(CANCEL_MESSAGE);
     dispatch({
       type: "removeUpload",
       payload: { file },

@@ -4,7 +4,7 @@ import {
   isPersistenceProvider,
 } from "../table-controls";
 
-export interface IActiveTab<TTabKey extends string> {
+interface IActiveTab<TTabKey extends string> {
   tabKey: TTabKey;
 }
 
@@ -26,7 +26,7 @@ export const useTabState = <
 ): ITabState<TTabKey> => {
   const { persistTo = "state", persistenceKeyPrefix } = args;
   const defaultActiveTab: IActiveTab<TTabKey> = args.defaultActiveTab ?? {
-    tabKey: args.tabKeys[0],
+    tabKey: args.tabKeys[0]!,
   };
 
   const [activeTab, setActiveTab] = usePersistentState<

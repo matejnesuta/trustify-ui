@@ -4,7 +4,7 @@
 
 - TypeScript 6.0, React 19
 - UI component library: PatternFly 6 (`@patternfly/react-core`, `@patternfly/react-table`)
-- Build tool: Vite (client), Rollup (common, server)
+- Build tool: Vite (client), Rollup (common, dev-server)
 - Routing: react-router-dom v7 with lazy-loaded routes
 - Data fetching: TanStack React Query v5
 - API client: auto-generated from OpenAPI spec via `@hey-api/openapi-ts` with Axios
@@ -12,7 +12,7 @@
 - E2E testing: Playwright with playwright-bdd (Gherkin features)
 - Unit testing: Vitest
 - Linting/formatting: ESLint + Prettier
-- Package manager: npm workspaces (Node.js >= 22)
+- Package manager: npm workspaces (Node.js >= 24)
 
 ## Code Style
 
@@ -78,7 +78,7 @@ import {Overview} from "./overview";
 package.json            # workspace root
 common/                 # shared ESM module (branding, environment config)
 client/                 # React SPA
-server/                 # Express.js production server (proxying, env injection)
+dev-server/             # Express.js production server (proxying, env injection)
 e2e/                    # Playwright end-to-end tests
 eslint.config.mjs       # ESLint config
 .prettierrc.mjs         # Prettier config
@@ -314,6 +314,8 @@ When the backend OpenAPI spec changes:
 - Page Object Model pattern: each page has a class (e.g., `SbomListPage`) with a static `build()` factory, encapsulating navigation and element access
 - Shared page objects: `Table`, `Toolbar`, `Pagination`, `Navigation` in `e2e/tests/ui/pages/`
 - Tags for test tiers: `{ tag: "@tier1" }`
+- **No explicit timeouts in shared page objects:** Playwright provides automatic waiting for elements, assertions, and actions. Shared classes (`Table`, `Toolbar`, `Pagination`, `Navigation`) must not add explicit `timeout` parameters. If a component triggers async re-rendering, the wait belongs in that component's page object, not in shared infrastructure.
+- **Composition over conditional expansion:** Page object methods should do one thing. For example, `clearAllFilters()` clears filters — checking whether filters exist is the caller's responsibility. Do not add conditional guards inside action methods.
 - Run e2e: `npm run e2e:test:ui` (full), `npm run e2e:test:api` (API only)
 
 ## Commit Messages

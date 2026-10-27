@@ -21,6 +21,7 @@ import {
 } from "@patternfly/react-core";
 
 import FileIcon from "@patternfly/react-icons/dist/esm/icons/file-code-icon";
+import ExclamationTriangleIcon from "@patternfly/react-icons/dist/esm/icons/exclamation-triangle-icon";
 import UploadIcon from "@patternfly/react-icons/dist/esm/icons/upload-icon";
 
 interface Upload {
@@ -38,10 +39,17 @@ export interface IUploadFilesProps {
   handleRemoveUpload: (file: File) => void;
   extractSuccessMessage: (response: AxiosResponse) => string;
   extractErrorMessage: (error: AxiosError) => string;
+  isDuplicate?: (response: AxiosResponse) => boolean;
   fileUploadProps?: Omit<
     MultipleFileUploadProps,
     "onFileDrop" | "dropzoneProps"
   >;
+  /** MIME-type → extension mapping passed to the dropzone accept filter. */
+  dropzoneAccept?: Record<string, string[]>;
+  /** Info text shown below the drag-and-drop area. */
+  infoText?: string;
+  /** When true, the drop zone rejects new files. */
+  disabled?: boolean;
 }
 
 export const UploadFiles: React.FC<IUploadFilesProps> = ({
@@ -50,7 +58,11 @@ export const UploadFiles: React.FC<IUploadFilesProps> = ({
   handleRemoveUpload,
   extractSuccessMessage,
   extractErrorMessage,
+  isDuplicate,
   fileUploadProps,
+  dropzoneAccept,
+  infoText,
+  disabled,
 }) => {
   const [showStatus, setShowStatus] = React.useState(false);
   const [statusIcon, setStatusIcon] = React.useState<
@@ -66,7 +78,11 @@ export const UploadFiles: React.FC<IUploadFilesProps> = ({
   // determine the icon that should be shown for the overall status list
   React.useEffect(() => {
     const currentUploads = Array.from(uploads.values());
-    if (currentUploads.some((e) => e.status === "inProgress")) {
+    if (
+      currentUploads.some(
+        (e) => e.status === "queued" || e.status === "inProgress",
+      )
+    ) {
       setStatusIcon("inProgress");
     } else if (currentUploads.every((e) => e.status === "complete")) {
       setStatusIcon("success");
@@ -91,19 +107,35 @@ export const UploadFiles: React.FC<IUploadFilesProps> = ({
     setRejectedFiles(fileRejections);
   };
 
-  const successFileCount = Array.from(uploads.values()).filter(
-    (upload) => upload.response,
+  const currentUploads = Array.from(uploads.values());
+  const duplicateFileCount = currentUploads.filter(
+    (upload) => upload.response && isDuplicate?.(upload.response),
   ).length;
+  const successFileCount = currentUploads.filter(
+    (upload) => upload.response && !isDuplicate?.(upload.response),
+  ).length;
+
+  const statusToggleText =
+    duplicateFileCount > 0
+      ? `${successFileCount} uploaded, ${duplicateFileCount} already existed`
+      : `${successFileCount} of ${uploads.size} files uploaded`;
+
+  const statusToggleIcon:
+    "danger" | "success" | "inProgress" | React.ReactNode =
+    statusIcon === "success" && duplicateFileCount > 0 ? (
+      <ExclamationTriangleIcon color="var(--pf-t--global--icon--color--status--warning--default)" />
+    ) : (
+      statusIcon
+    );
 
   return (
     <MultipleFileUpload
       onFileDrop={handleFileDrop}
       dropzoneProps={{
-        accept: {
-          "application/xml": [".json", ".bz2"],
-        },
+        accept: dropzoneAccept ?? { "application/xml": [".json", ".bz2"] },
         onDropRejected: handleDropRejected,
         useFsAccessApi: false, // Required to make playwright work
+        disabled,
       }}
       {...fileUploadProps}
     >
@@ -111,12 +143,12 @@ export const UploadFiles: React.FC<IUploadFilesProps> = ({
         titleIcon={<UploadIcon />}
         titleText="Drag and drop files here"
         titleTextSeparator="or"
-        infoText="Accepted file types: .json, .bz2"
+        infoText={infoText ?? "Accepted file types: .json, .bz2"}
       />
       {showStatus && (
         <MultipleFileUploadStatus
-          statusToggleText={`${successFileCount} of ${uploads.size} files uploaded`}
-          statusToggleIcon={statusIcon}
+          statusToggleText={statusToggleText}
+          statusToggleIcon={statusToggleIcon}
         >
           {Array.from(uploads.entries()).map(([file, upload], index) => (
             <MultipleFileUploadStatusItem
@@ -131,7 +163,9 @@ export const UploadFiles: React.FC<IUploadFilesProps> = ({
                 upload.error
                   ? "danger"
                   : upload.response
-                    ? "success"
+                    ? isDuplicate?.(upload.response)
+                      ? "warning"
+                      : "success"
                     : undefined
               }
               progressHelperText={
@@ -150,7 +184,11 @@ export const UploadFiles: React.FC<IUploadFilesProps> = ({
                   </HelperText>
                 ) : upload.response ? (
                   <HelperText isLiveRegion>
-                    <HelperTextItem variant="default">
+                    <HelperTextItem
+                      variant={
+                        isDuplicate?.(upload.response) ? "warning" : "default"
+                      }
+                    >
                       {extractSuccessMessage(upload.response)}
                     </HelperTextItem>
                   </HelperText>

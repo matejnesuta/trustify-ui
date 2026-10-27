@@ -18,10 +18,7 @@ import type {
   SbomStatus,
   ScoredVector,
 } from "@app/client";
-import {
-  useFetchSbomsAdvisory,
-  useFetchSbomsAdvisoryBatch,
-} from "@app/queries/sboms";
+import { useFetchSbomsAdvisory } from "@app/queries/sboms";
 
 const areVulnerabilityOfSbomEqual = (
   a: VulnerabilityOfSbom,
@@ -183,7 +180,7 @@ const advisoryToModels = (advisories: SbomAdvisory[]) => {
               advisory: current.advisory,
               score: score,
             },
-          ].sort(compareByScoreTypeFn((item) => item.score?.type ?? null))[0];
+          ].sort(compareByScoreTypeFn((item) => item.score?.type ?? null))[0]!;
 
           opinionatedAdvisory = preferedAdvisoryScore.advisory;
           opinionatedScore = preferedAdvisoryScore.score;
@@ -294,12 +291,15 @@ const advisoryToModels = (advisories: SbomAdvisory[]) => {
   };
 };
 
-export const useVulnerabilitiesOfSbom = (sbomId: string) => {
+export const useVulnerabilitiesOfSbom = (
+  sbomId: string,
+  includeResolved = false,
+) => {
   const {
     advisories,
     isFetching: isFetchingAdvisories,
     fetchError: fetchErrorAdvisories,
-  } = useFetchSbomsAdvisory(sbomId);
+  } = useFetchSbomsAdvisory(sbomId, includeResolved);
 
   const result = React.useMemo(() => {
     return advisoryToModels(advisories || []);
@@ -307,24 +307,45 @@ export const useVulnerabilitiesOfSbom = (sbomId: string) => {
 
   return {
     data: result,
+    advisories: advisories || [],
     isFetching: isFetchingAdvisories,
     fetchError: fetchErrorAdvisories,
   };
 };
 
-export const useVulnerabilitiesOfSboms = (sbomIds: string[]) => {
-  const { advisories, isFetching, fetchError } =
-    useFetchSbomsAdvisoryBatch(sbomIds);
+export type PurlVexResolution = {
+  status: VulnerabilityStatus;
+  advisory: AdvisoryHead;
+};
 
-  const result = React.useMemo(() => {
-    return (advisories ?? []).map((item) => {
-      return advisoryToModels(item || []);
-    });
-  }, [advisories]);
+const RESOLVING_STATUSES = new Set([
+  "not_affected",
+  "known_not_affected",
+  "fixed",
+]);
 
-  return {
-    data: result,
-    isFetching: isFetching,
-    fetchError: fetchError,
-  };
+export const buildVexByPurl = (
+  advisories: SbomAdvisory[],
+): Map<string, Map<string, PurlVexResolution>> => {
+  const result = new Map<string, Map<string, PurlVexResolution>>();
+  for (const sbomAdvisory of advisories) {
+    for (const status of sbomAdvisory.status) {
+      if (!RESOLVING_STATUSES.has(status.status)) continue;
+      const vulnId = status.identifier;
+      for (const pkg of status.packages) {
+        for (const purl of pkg.purl) {
+          let purlMap = result.get(vulnId);
+          if (!purlMap) {
+            purlMap = new Map();
+            result.set(vulnId, purlMap);
+          }
+          purlMap.set(purl.purl, {
+            status: status.status as VulnerabilityStatus,
+            advisory: sbomAdvisory,
+          });
+        }
+      }
+    }
+  }
+  return result;
 };

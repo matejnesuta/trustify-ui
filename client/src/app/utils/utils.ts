@@ -14,17 +14,37 @@ export const getAxiosErrorMessage = (axiosError: AxiosError<any>) => {
 
   const error = typeof data?.error === "string" ? data.error : undefined;
   const message = typeof data?.message === "string" ? data.message : undefined;
-  const details = typeof data?.details === "string" ? data.details : undefined;
+
+  // Prefer an inline details string; fall back to extracting finding messages
+  // from validation reports (e.g. ValidationRejected responses).
+  let details: string | undefined;
+  if (typeof data?.details === "string") {
+    details = data.details;
+  } else if (Array.isArray(data?.validation)) {
+    const msgs: string[] = [];
+    for (const report of data.validation) {
+      if (Array.isArray(report?.findings)) {
+        for (const f of report.findings) {
+          if (typeof f?.message === "string") {
+            msgs.push(f.message);
+          }
+        }
+      }
+    }
+    if (msgs.length > 0) {
+      details = msgs.join("\n");
+    }
+  }
 
   if (error && message) {
     const base = `${error}: ${message}`;
     return details ? `${base}\n${details}` : base;
   }
   if (message) {
-    return message;
+    return details ? `${message}\n${details}` : message;
   }
   if (error) {
-    return error;
+    return details ? `${error}\n${details}` : error;
   }
 
   if (typeof data === "string") {
@@ -49,33 +69,6 @@ export const formatDateTime = (value?: string | null) => {
   return value ? dayjs(value).format(RENDER_DATETIME_FORMAT) : null;
 };
 
-export const duplicateFieldCheck = <T>(
-  fieldKey: keyof T,
-  itemList: T[],
-  currentItem: T | null,
-  fieldValue: T[keyof T],
-) =>
-  (currentItem && currentItem[fieldKey] === fieldValue) ||
-  !itemList.some((item) => item[fieldKey] === fieldValue);
-
-export const duplicateNameCheck = <T extends { name?: string }>(
-  itemList: T[],
-  currentItem: T | null,
-  nameValue: T["name"],
-) => duplicateFieldCheck("name", itemList, currentItem, nameValue);
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- allowed
-export const dedupeFunction = (arr: any[]) =>
-  arr?.filter(
-    (value, index, self) =>
-      index === self.findIndex((t) => t.value === value.value),
-  );
-
-export const numStr = (num: number | undefined): string => {
-  if (num === undefined) return "";
-  return String(num);
-};
-
 export const parseMaybeNumericString = (
   numOrStr: string | undefined | null,
 ): string | number | null => {
@@ -95,10 +88,6 @@ export const getValidatedFromErrors = (
   return error && (dirty || isTouched) ? "error" : "default";
 };
 
-export const getValidatedFromError = (error: unknown | undefined) => {
-  return error ? "error" : "default";
-};
-
 export const decomposePurl = (purl: string) => {
   try {
     const packageData = PackageURL.fromString(purl);
@@ -114,6 +103,22 @@ export const decomposePurl = (purl: string) => {
   } catch (error) {
     console.error(error);
     return undefined;
+  }
+};
+
+/** Compare two PURLs by type, namespace, name, and version, ignoring qualifiers. */
+export const purlBaseEquals = (a: string, b: string): boolean => {
+  try {
+    const pa = PackageURL.fromString(a);
+    const pb = PackageURL.fromString(b);
+    return (
+      pa.type === pb.type &&
+      pa.namespace === pb.namespace &&
+      pa.name === pb.name &&
+      pa.version === pb.version
+    );
+  } catch {
+    return a === b;
   }
 };
 
@@ -136,7 +141,7 @@ export const getFilenameFromContentDisposition = (
   contentDisposition: string,
 ): string | null => {
   const match = contentDisposition.match(/filename="?([^"]+)"?/);
-  return match ? match[1] : null;
+  return match ? (match[1] ?? null) : null;
 };
 
 export const parseBooleanIfPossible = (value?: string): boolean => {

@@ -35,6 +35,7 @@ const SBOMList = lazy(() => import("./pages/sbom-list"));
 const SBOMUpload = lazy(() => import("./pages/sbom-upload"));
 const SBOMScan = lazy(() => import("./pages/sbom-scan"));
 const SBOMDetails = lazy(() => import("./pages/sbom-details"));
+const RemediationReport = lazy(() => import("./pages/remediation-report"));
 
 // SBOM Groups
 const SbomGroupList = lazy(() => import("./pages/sbom-groups"));
@@ -44,6 +45,10 @@ const SBOMGroupDetails = lazy(() => import("./pages/sbom-group-details"));
 const Search = lazy(() => import("./pages/search"));
 const ImporterList = lazy(() => import("./pages/importer-list"));
 const LicenseList = lazy(() => import("./pages/license-list"));
+const CryptoList = lazy(() => import("./pages/crypto-list"));
+const CryptoRemediationUpload = lazy(
+  () => import("./pages/crypto-remediation-upload"),
+);
 const ModelList = lazy(() => import("./pages/model-list"));
 const NotFound = lazy(() => import("./pages/not-found"));
 /* eslint-enable react-refresh/only-export-components */
@@ -53,7 +58,6 @@ export enum PathParam {
   VULNERABILITY_ID = "vulnerabilityId",
   SBOM_ID = "sbomId",
   PACKAGE_ID = "packageId",
-  LICENSE_NAME = "licenseName",
   SBOM_GROUP_ID = "sbomGroupId",
 }
 
@@ -66,21 +70,21 @@ export const Paths = {
   sboms: "/sboms",
   sbomUpload: "/sboms/upload",
   sbomScan: "/sboms/scan",
+  remediationReport: "/sboms/remediation-report",
   sbomDetails: `/sboms/:${PathParam.SBOM_ID}`,
   packages: "/packages",
   packageDetails: `/packages/:${PathParam.PACKAGE_ID}`,
   search: "/search",
   importers: "/importers",
   licenses: "/licenses",
+  cryptography: "/cryptography",
+  cryptographyRemediationUpload: "/cryptography/remediation/import",
   models: "/models",
   sbomGroups: "/sbom-groups",
   sbomGroupDetails: `/sbom-groups/:${PathParam.SBOM_GROUP_ID}`,
 } as const;
 
-export const getPathFromParams = (
-  params: Params<string>,
-  pathParam: PathParam,
-) => {
+const getPathFromParams = (params: Params<string>, pathParam: PathParam) => {
   const value = params[pathParam];
   if (value === undefined) {
     throw new Error(
@@ -155,6 +159,24 @@ export const AppRoutes = createBrowserRouter([
         ),
       },
       {
+        path: Paths.cryptography,
+        element: (
+          <LazyRouteElement
+            identifier="crypto-list"
+            component={<CryptoList />}
+          />
+        ),
+      },
+      {
+        path: Paths.cryptographyRemediationUpload,
+        element: (
+          <LazyRouteElement
+            identifier="crypto-remediation-upload"
+            component={<CryptoRemediationUpload />}
+          />
+        ),
+      },
+      {
         path: Paths.models,
         element: (
           <LazyRouteElement identifier="model-list" component={<ModelList />} />
@@ -192,6 +214,15 @@ export const AppRoutes = createBrowserRouter([
         path: Paths.sboms,
         element: (
           <LazyRouteElement identifier="sbom-list" component={<SBOMList />} />
+        ),
+      },
+      {
+        path: Paths.remediationReport,
+        element: (
+          <LazyRouteElement
+            identifier="remediation-report"
+            component={<RemediationReport />}
+          />
         ),
       },
       {

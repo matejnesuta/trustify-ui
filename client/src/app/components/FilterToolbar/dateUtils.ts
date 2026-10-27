@@ -6,15 +6,6 @@ import dayjs from "dayjs";
  * @param date  ISO date time
  * @returns true if the provided date is in the time interval
  */
-export const isInClosedRange = (interval: string, date: string): boolean => {
-  const [start, end] = parseInterval(interval);
-  if (!isValidInterval([start, end])) {
-    return false;
-  }
-  const target = dayjs(date);
-  return start.isSameOrBefore(target) && target.isSameOrBefore(end, "day");
-};
-
 export const isValidAmericanShortDate = (val: string) =>
   dayjs(val, "MM/DD/YYYY", true).isValid();
 
@@ -36,7 +27,7 @@ export const toISODateInterval = (from?: Date, to?: Date) => {
 export const parseInterval = (interval: string): dayjs.Dayjs[] =>
   interval?.split("/").map((it) => dayjs(it, "YYYY-MM-DD", true)) ?? [];
 
-export const isValidInterval = ([from, to]: dayjs.Dayjs[]) =>
+export const isValidInterval = ([from, to]: (dayjs.Dayjs | undefined)[]) =>
   from?.isValid() && to?.isValid() && from?.isSameOrBefore(to);
 
 export const localizeInterval = (interval: string) => {
@@ -45,7 +36,7 @@ export const localizeInterval = (interval: string) => {
     return [];
   }
   return [
-    `${start.format("MM/DD")}-${end.format("MM/DD")}`,
-    `${start.format("MM/DD/YYYY")}-${end.format("MM/DD/YYYY")}`,
+    `${start!.format("MM/DD")}-${end!.format("MM/DD")}`,
+    `${start!.format("MM/DD/YYYY")}-${end!.format("MM/DD/YYYY")}`,
   ];
 };
